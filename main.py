@@ -1,8 +1,8 @@
 from args import parser
 import os
-from prepare_data import create_data
-from train_model import training
-from prediction_denoise import prediction
+from prepare_data.utils import create_data
+from model_training.utils import training
+from prediction.utils import prediction
 
 if __name__ == '__main__':
 

@@ -4,8 +4,8 @@ sys.path.append('..')
 import librosa
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from data_tools import scaled_in, inv_scaled_ou
-from data_tools import audio_files_to_numpy, numpy_audio_to_matrix_spectrogram, matrix_spectrogram_to_numpy_audio
+from data_tools.utils import scaled_in, inv_scaled_ou
+from data_tools.utils import audio_files_to_numpy, numpy_audio_to_matrix_spectrogram, matrix_spectrogram_to_numpy_audio
 
 path_weights = '../weights/'
 
