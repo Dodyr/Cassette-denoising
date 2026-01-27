@@ -3,19 +3,14 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 sys.path.append('..')
 import librosa
 import tensorflow as tf
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.models import load_model
 from data_tools import scaled_in, inv_scaled_ou
 from data_tools import audio_files_to_numpy, numpy_audio_to_matrix_spectrogram, matrix_spectrogram_to_numpy_audio
 
 path_weights = '../weights/'
 
-# load json and create model
-json_file = open(path_weights+'model_unet.json', 'r')
-loaded_model_json = json_file.read()
-json_file.close()
-loaded_model = model_from_json(loaded_model_json)
-# load weights into new model
-loaded_model.load_weights(path_weights+'model_unet.h5')
+# Load model from weights file
+loaded_model = load_model(path_weights+'model_unet.h5')
 print("Loaded model from disk")
 
 audio_dir_prediction = '../demo_data/test'

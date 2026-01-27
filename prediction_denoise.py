@@ -1,6 +1,6 @@
 import librosa
 import tensorflow as tf
-from tensorflow.keras.models import model_from_json
+from tensorflow.keras.models import load_model
 from data_tools import scaled_in, inv_scaled_ou
 from data_tools import audio_files_to_numpy, numpy_audio_to_matrix_spectrogram, matrix_spectrogram_to_numpy_audio
 
@@ -11,13 +11,8 @@ audio_output_prediction, sample_rate, min_duration, frame_length, hop_length_fra
     the denoise sound and save it to disk.
     """
 
-    # load json and create model
-    json_file = open(weights_path+'/'+name_model+'.json', 'r')
-    loaded_model_json = json_file.read()
-    json_file.close()
-    loaded_model = model_from_json(loaded_model_json)
-    # load weights into new model
-    loaded_model.load_weights(weights_path+'/'+name_model+'.h5')
+    # Load model from weights file
+    loaded_model = load_model(weights_path + '/' + name_model + '.h5')
     print("Loaded model from disk")
 
     # Extracting noise and voice from folder and convert to numpy
@@ -52,4 +47,4 @@ audio_output_prediction, sample_rate, min_duration, frame_length, hop_length_fra
     nb_samples = audio_denoise_recons.shape[0]
     #Save all frames in one file
     denoise_long = audio_denoise_recons.reshape(1, nb_samples * frame_length)*10
-    librosa.output.write_wav(dir_save_prediction + audio_output_prediction, denoise_long[0, :], sample_rate)
+    librosa.output.write(dir_save_prediction + audio_output_prediction, denoise_long[0, :], sr=sample_rate)
