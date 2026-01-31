@@ -1,3 +1,6 @@
 * linguist-vendored
 *.py linguist-vendored=false
+cassette_denoise/data/mod_unet_last_weights_v13.weights.h5 filter=lfs diff=lfs merge=lfs -text
+cassette_denoise/data/mod_unet_last_weights_v14.weights.h5 filter=lfs diff=lfs merge=lfs -text
+cassette_denoise/data/mod_unet_last_weights_v15.weights.h5 filter=lfs diff=lfs merge=lfs -text
 *.h5 !text !filter !merge !diff

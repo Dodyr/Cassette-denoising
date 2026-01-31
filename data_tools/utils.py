@@ -65,7 +65,7 @@ def audio_to_magnitude_db_and_phase(n_fft, hop_length_fft, audio):
     stftaudio_magnitude, stftaudio_phase = librosa.magphase(stftaudio)
 
     stftaudio_magnitude_db = librosa.amplitude_to_db(
-        stftaudio_magnitude, ref=np.max)
+        stftaudio_magnitude, ref=1.0, top_db=80.0)
 
     return stftaudio_magnitude_db, stftaudio_phase
 
@@ -114,20 +114,40 @@ def matrix_spectrogram_to_numpy_audio(m_mag_db, m_phase, frame_length, hop_lengt
 
 def scaled_in(matrix_spec):
     "global scaling apply to noisy voice spectrograms (scale between -1 and 1)"
-    matrix_spec = (matrix_spec + 46)/50
+    matrix_spec = (matrix_spec / 40.0) + 1.0
     return matrix_spec
 
 def scaled_ou(matrix_spec):
     "global scaling apply to noise models spectrograms (scale between -1 and 1)"
-    matrix_spec = (matrix_spec -6 )/82
+    matrix_spec = (matrix_spec / 40.0) + 1.0
     return matrix_spec
 
 def inv_scaled_in(matrix_spec):
     "inverse global scaling apply to noisy voices spectrograms"
-    matrix_spec = matrix_spec * 50 - 46
+    matrix_spec = (matrix_spec - 1.0) * 40.0
     return matrix_spec
 
 def inv_scaled_ou(matrix_spec):
     "inverse global scaling apply to noise models spectrograms"
-    matrix_spec = matrix_spec * 82 + 6
+    matrix_spec = (matrix_spec - 1.0) * 40.0
     return matrix_spec
+
+# def scaled_in(matrix_spec, a = 40, b = 40):
+#     "global scaling apply to noisy voice spectrograms (scale between -1 and 1)"
+#     matrix_spec = (matrix_spec + a) / b
+#     return matrix_spec
+
+# def scaled_ou(matrix_spec, a = 40, b = 40):
+#     "global scaling apply to noise models spectrograms (scale between -1 and 1)"
+#     matrix_spec = (matrix_spec + a )/ b
+#     return matrix_spec
+
+# def inv_scaled_in(matrix_spec, a = 40, b = 40):
+#     "inverse global scaling apply to noisy voices spectrograms"
+#     matrix_spec = matrix_spec * b - a
+#     return matrix_spec
+
+# def inv_scaled_ou(matrix_spec, a = 40, b = 40):
+#     "inverse global scaling apply to noise models spectrograms"
+#     matrix_spec = matrix_spec * b - a
+#     return matrix_spec
