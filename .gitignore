@@ -2,4 +2,3 @@
 __pycache__/
 venv_tf2/
 venv/
-*.h5

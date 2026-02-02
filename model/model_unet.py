@@ -6,13 +6,32 @@ from tensorflow.keras import backend
 import tensorflow as tf
 print(tf.__version__)
 
+def high_freq_mae(y_true, y_pred):
+    # y_true is now the MASK (0 to 1)
+    # y_pred is the PREDICTED MASK (sigmoid output, 0 to 1)
+
+    # Frequencies are on axis 1 (rows) for (Batch, Freq, Time, Channels)
+    frequencies = tf.range(512, dtype=tf.float32)
+
+    # Linear weight increase from 1.0 to 5.0
+    weights = 1.0 + (frequencies / 512.0) * 4.0
+
+    # IMPORTANT: Ensure reshape matches (Batch, Freq, Time, Chan)
+    # If your data is (Batch, 512, 512, 1) where Dim 1 is Freq:
+    weights = tf.reshape(weights, (1, 512, 1, 1))
+
+    mae = tf.abs(y_true - y_pred)
+    weighted_mae = mae * weights
+
+    return tf.reduce_mean(weighted_mae)
+
 #Unet network
-def unet(pretrained_weights = None,input_size = (128,128,1)):
+def unet(pretrained_weights = None,input_size = (512,512,1)):
     #size filter input
-    size_filter_in = 16
+    size_filter_in = 64
     #normal initialization of weights
     kernel_init = 'he_normal'
-    #To apply leaky relu after the conv layer 
+    #To apply leaky relu after the conv layer
     activation_layer = None
     inputs = Input(input_size)
     conv1 = Conv2D(size_filter_in, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(inputs)
@@ -20,16 +39,19 @@ def unet(pretrained_weights = None,input_size = (128,128,1)):
     conv1 = Conv2D(size_filter_in, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv1)
     conv1 = LeakyReLU()(conv1)
     pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
+
     conv2 = Conv2D(size_filter_in*2, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(pool1)
     conv2 = LeakyReLU()(conv2)
     conv2 = Conv2D(size_filter_in*2, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv2)
     conv2 = LeakyReLU()(conv2)
     pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
+
     conv3 = Conv2D(size_filter_in*4, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(pool2)
     conv3 = LeakyReLU()(conv3)
     conv3 = Conv2D(size_filter_in*4, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv3)
     conv3 = LeakyReLU()(conv3)
     pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
+
     conv4 = Conv2D(size_filter_in*8, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(pool3)
     conv4 = LeakyReLU()(conv4)
     conv4 = Conv2D(size_filter_in*8, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv4)
@@ -50,6 +72,7 @@ def unet(pretrained_weights = None,input_size = (128,128,1)):
     conv6 = LeakyReLU()(conv6)
     conv6 = Conv2D(size_filter_in*8, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv6)
     conv6 = LeakyReLU()(conv6)
+
     up7 = Conv2D(size_filter_in*4, 2, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(UpSampling2D(size = (2,2))(conv6))
     up7 = LeakyReLU()(up7)
     merge7 = concatenate([conv3,up7], axis = 3)
@@ -57,6 +80,7 @@ def unet(pretrained_weights = None,input_size = (128,128,1)):
     conv7 = LeakyReLU()(conv7)
     conv7 = Conv2D(size_filter_in*4, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv7)
     conv7 = LeakyReLU()(conv7)
+
     up8 = Conv2D(size_filter_in*2, 2, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(UpSampling2D(size = (2,2))(conv7))
     up8 = LeakyReLU()(up8)
     merge8 = concatenate([conv2,up8], axis = 3)
@@ -72,13 +96,15 @@ def unet(pretrained_weights = None,input_size = (128,128,1)):
     conv9 = LeakyReLU()(conv9)
     conv9 = Conv2D(size_filter_in, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv9)
     conv9 = LeakyReLU()(conv9)
-    conv9 = Conv2D(2, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv9)
-    conv9 = LeakyReLU()(conv9)
-    conv10 = Conv2D(1, 1, activation = 'tanh')(conv9)
+    # conv9 = Conv2D(2, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv9)
+    # conv9 = LeakyReLU()(conv9)
+
+    # conv10 = Conv2D(1, 1, activation = 'tanh')(conv9)
+    conv10 = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
     model = Model(inputs,conv10)
 
-    model.compile(optimizer = 'adam', loss = tf.keras.losses.Huber(), metrics = ['mae'])
+    model.compile(optimizer = 'adam', loss = high_freq_mae, metrics = ['mae'])
 
     #model.summary()
 
