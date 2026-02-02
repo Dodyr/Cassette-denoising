@@ -41,7 +41,7 @@ I managed to obtain a training loss of 0.2134 (mae=0.0585) and a validation loss
 
 For prediction, the noisy audios are converted into time-frequency representatin with STFT, converted to dB and scaled between -1 and 1 for the input. Then it is sliced into overlapping windows of size 512x512, which is around 6 seconds of audio (44.1kHz). The model predicts the mask which is applied as the following
 
-    $$Magnitude_{clean} = Magnitude_{noisy} \times Mask_{predicted}$$
+$$Magnitude_{clean} = Magnitude_{noisy} \times Mask_{predicted}$$
 
 this is for the audio not to clip and distort. At the end the cleaned magnitude is combined with original noisy phase and converted back with iSTFT. This happens twice if the audio was stereo, in this case both channels are combined at the end.
 
