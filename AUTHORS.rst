@@ -5,9 +5,14 @@ Credits
 Development Lead
 ----------------
 
-* vincent belz <vincent.belz@gmail.com>
+* mikhail arapov <misha.arapov@gmail.com>
 
 Contributors
 ------------
 
 None yet. Why not be the first?
+
+Acknowledgments
+---------------
+
+* vincent belz <vincent.belz@gmail.com>

@@ -96,10 +96,7 @@ def unet(pretrained_weights = None,input_size = (512,512,1)):
     conv9 = LeakyReLU()(conv9)
     conv9 = Conv2D(size_filter_in, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv9)
     conv9 = LeakyReLU()(conv9)
-    # conv9 = Conv2D(2, 3, activation = activation_layer, padding = 'same', kernel_initializer = kernel_init)(conv9)
-    # conv9 = LeakyReLU()(conv9)
 
-    # conv10 = Conv2D(1, 1, activation = 'tanh')(conv9)
     conv10 = Conv2D(1, 1, activation = 'sigmoid')(conv9)
 
     model = Model(inputs,conv10)

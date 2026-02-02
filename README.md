@@ -1,16 +1,9 @@
-# Speech-enhancement
----
-[![Build Status](https://travis-ci.com/vbelz/Speech-enhancement.svg?branch=master)](https://travis-ci.com/vbelz/Speech-enhancement)
->Vincent Belz : vincent.belz@gmail.com
->
->Published in towards data science : [Speech-enhancement with Deep learning](https://towardsdatascience.com/speech-enhancement-with-deep-learning-36a1991d3d8d)
->
+# Cassette denoising
+
+This project is based on [Speech-enhancement with Deep learning](https://github.com/vbelz/Speech-enhancement) by Vincent Belz. Thank you, Vincent
+
 ## Introduction
-**This project aims at building a speech enhancement system to attenuate environmental noise.**
-
-<img src="img/denoise_10classes.gif" alt="Spectrogram denoising" title="Speech enhancement"/>
-
-
+**This project aims at building a audio enhancement system to elimitate cassette noise.**
 
 Audios have many different ways to be represented, going from raw time series to time-frequency decompositions.
 The choice of the representation is crucial for the performance of your system.
@@ -20,160 +13,55 @@ In this project, I will use magnitude spectrograms as a representation of sound 
 
 <img src="img/sound_to_spectrogram.png" alt="sound representation" title="sound representation" />
 
-The project is decomposed in three modes: `data creation`, `training` and `prediction`.
-
 ## Prepare the data
 
-To create the datasets for training, I gathered english speech clean voices  and environmental noises from different sources.
+To create the datasets for training, I gathered digitized a few audiocassettes I own and digitized pure cassette noise from an empty cassette. I applied noise reduction to the audio in [Audacity](https://www.audacityteam.org/) to make them sound clean enough and then added the recorded cassette noise on top. I did so for two reasons: 
+    - if I would pair raw cassette recordings with Audacity-denoised versions there would be a difference in dB, which I didn't want.
+    - it proved impossible to pair them with digitazation of the same cassettes with Dolby B noise reduction turned on, due to wow and flutter it wasn't possible pair the audio 1 to 1, there was a small difference in speed playback in each moment of time, unnoticeable during regular listening, but this would be useless for the training.
 
-The clean voices were mainly gathered from [LibriSpeech](http://www.openslr.org/12/): an ASR corpus based on public domain audio books. I used as well some datas from [SiSec](https://sisec.inria.fr/sisec-2015/2015-two-channel-mixtures-of-speech-and-real-world-background-noise/).
-The environmental noises were gathered from [ESC-50 dataset](https://github.com/karoldvl/ESC-50) or [https://www.ee.columbia.edu/~dpwe/sounds/](https://www.ee.columbia.edu/~dpwe/sounds/).  
-
- For this project, I focused on 10 classes of environmental noise: **tic clock**, **foot steps**, **bells**, **handsaw**, **alarm**, **fireworks**, **insects**, **brushing teeth**, **vaccum cleaner** and **snoring**. These classes are illustrated in the image below
- (I created this image using pictures from [https://unsplash.com](https://unsplash.com)).
-
-<img src="img/classes_noise.png" alt="classes of environmental noise used" title="classes of environmental noise" />
-
-To create the datasets for training/validation/testing, audios were sampled at 8kHz and I extracted windows
-slighly above 1 second. I performed some data augmentation for the environmental noises (taking the windows at different times creates different noise windows). Noises have been blended to clean voices  with a randomization of the noise level (between 20% and 80%). At the end, training data consisted of 10h of noisy voice & clean voice,
-and validation data of 1h of sound.
-
-To prepare the data, I recommend to create data/Train and data/Test folders in a location separate from your code folder. Then create the following structure as in the image below:
-
-<img src="img/structure_folder.png" alt="data folder structure" title="data folder structure" />
-
-You would modify the `noise_dir`, `voice_dir`, `path_save_spectrogram`, `path_save_time_serie`, and `path_save_sound` paths name accordingly into the `args.py` file that takes the default parameters for the program.
-
-Place your noise audio files into `noise_dir` directory and your clean voice files into `voice_dir`.
-
-Specify how many frames you want to create as `nb_samples` in `args.py` (or pass it as argument from the terminal)
-I let nb_samples=50 by default for the demo but for production I would recommend having 40 000 or more.
-
-Then run `python main.py --mode='data_creation'`. This will randomly blend some clean voices from `voice_dir` with some noises from `noise_dir` and save the spectrograms of noisy voices, noises and clean voices to disk as well as complex phases, time series and sounds (for QC or to test other networks). It takes the inputs parameters defined in `args.py`. Parameters for STFT, frame length, hop_length can be modified in `args.py` (or pass it as arguments from the terminal), but with the default parameters each window will be converted into spectrogram matrix of size 128 x 128.
-
-Datasets to be used for training will be magnitude spectrograms of noisy voices and magnitude spectrograms of clean voices.
-
+To create the datasets for training/testing, audios were sampled at 44.1kHz. I added together two music albums with small pauses in betweem resulting in around 2 hours of continious audio. To train the model 'notebook.ipynb' was used.
 
 ## Training
 
 The model used for the training is a U-Net, a Deep Convolutional Autoencoder with symmetric skip connections. [U-Net](https://arxiv.org/abs/1505.04597) was initially developed for Bio Medical Image Segmentation. Here the U-Net has been adapted to denoise spectrograms.
 
-As input to the network, the magnitude spectrograms of the noisy voices. As output the Noise to model (noisy voice magnitude spectrogram - clean voice magnitude spectrogram). Both input and output matrix are scaled with a global scaling to be mapped into a distribution between -1 and 1.
+As input to the U-Net use the magnitude spectrograms of the noisy audio, pipeline is made so that `.wav` audio files are transformed into spectrograms, you are expected to provide only the `.wav` files. Model outputs a mask, which applied to the audio denoises it.
 
-<img src="img/Unet_noisyvoice_to_noisemodel.png" alt="Unet training" title="Unet training" />
+The final configuration of the model is the following: a U-Net with 10 convolutional layers arranged in 5 levels of depth, each with LeakyReLU activation, He normal weight initialization and Max Pooling for downsampling. The model uses Sigmoid activation in the final layer to predict the mask with values 0 to 1, which represent probability of being noise or actual signal.
 
-Many configurations have been tested during the training. For the preferred configuration the encoder is made of 10 convolutional layers (with LeakyReLU, maxpooling and dropout). The decoder is a symmetric expanding path with skip connections. The last activation layer is a hyperbolic tangent (tanh) to have an output distribution between -1 and 1. For training from scratch the initial random weights where set with He normal initializer.
+Model is compiled with Adam optimizer and a custom loss function, specifically made for the expected amplitude of the cassette noise.
 
-Model is compiled with Adam optimizer and the loss function used is the Huber loss as a compromise between the L1 and L2 loss.
+Training was conducted in Google Colab so I don't know how long that would take on a PC, but a powerfull videocard is adviced. NVIDIA cards sure work, because the support CUDA, AMD should work too with [Tensorflow-directml](https://pypi.org/project/tensorflow-directml/).
 
-Training on a modern GPU takes a couple of hours.
+I managed to obtain a training loss of 0.2134 (mae=0.0585) and a validation loss of 0.2229 (mae=0.0585). Below a loss graph made for the final training (you can see that in the end it flatlined, but the one with the best results was used either way).
 
-If you have a GPU for deep learning computation in your local computer, you can train with:
-`python main.py --mode="training"`. It takes as inputs parameters defined in `args.py`. By default it will train from scratch (you can change this by turning `training_from_scratch` to false). You can
-start training from pre-trained weights specified in `weights_folder` and `name_model`. I let available `model_unet.h5` with weights from my training in `./weights`. The number of epochs and the batch size for training are specified by `epochs` and `batch_size`. Best weights are automatically saved during training as `model_best.h5`. You can call fit_generator to only load part of the data to disk at training time.
-
-Personally, I used the free GPU available at Google colab for my training. I let a notebook example at
-`./colab/Train_denoise.ipynb`. If you have a large available space on your drive, you can load all your training data to your drive and load part of it at training time with the fit_generator option of tensorflow.keras. Personally I had limited space available on my Google drive so I pre-prepared in advanced batches of 5Gb to be loaded to drive for training. Weights were regularly saved and reload for next training.
-
-At the end, I obtained a training loss of 0.002129 and a validation loss of 0.002406. Below a loss graph made in one of the trainings.
-
-<img src="img/loss_training.png" alt="loss training" title="loss training" />
+<img src="img/loss.png" alt="loss training" title="loss training with a twist!" />
 
 ## Prediction
 
-For prediction, the noisy voice audios are converted into numpy time series of windows slightly above 1 second. Each time serie is converted into a magnitude spectrogram and a phase spectrogram via STFT transforms. Noisy voice spectrograms are passed into the U-Net network that will predict the noise model for each window (cf graph below). Prediction time for one window once converted to magnitude spectrogram is around 80 ms using classical CPU.
+For prediction, the noisy audios are converted into time-frequency representatin with STFT, converted to dB and scaled between -1 and 1 for the input. Then it is sliced into overlapping windows of size 512x512, which is around 6 seconds of audio (44.1kHz). The model predicts the mask which is applied as the following
 
-<img src="img/flow_prediction.png" alt="flow prediction part 1" title="flow prediction part 1" />
+    $$Magnitude_{clean} = Magnitude_{noisy} \times Mask_{predicted}$$
 
-Then the model is subtracted from the noisy voice spectrogram (here I apply a direct subtraction as it was sufficient for my task, we could imagine to train a second network to adapt the noise model, or applying a matching filter such as performed in signal processing). The "denoised" magnitude spectrogram is combined with the initial phase as input for the inverse Short Time Fourier Transform (ISTFT). Our denoised time serie can be then converted to audio (cf graph below).
+this is for the audio not to clip and distort. At the end the cleaned magnitude is combined with original noisy phase and converted back with iSTFT. This happens twice if the audio was stereo, in this case both channels are combined at the end.
 
-<img src="img/flow_prediction_part2.png" alt="flow prediction part 2" title="flow prediction part 2" />
+## Performance
+Model has performed quite good! See (and hear) for yourself!
 
-Let's have a look at the performance on validation datas!
+<img src="img/spectrogram_comparison.png" alt="spectrogram comparison" title="spectrogram comparison" />
 
-Below I display some results from validation examples for Alarm/Insects/Vaccum cleaner/Bells noise.
-For each of them I display the initial noisy voice spectrogram, the denoised spectrogram predicted by the network, and the true clean voice spectrogram. We can see that the network is well able to generalize the noise modelling, and produce a slightly smoothed version of the voice spectrogram, very close to the true clean voice spectrogram.
+I have several audio files saved in `cassette_denoise/data/`.
+In general, model has proven to be strong in mono and stereo denoising, it has high fidelity recovery. In the tests SI-SDR was around 19 dB. This means that the audio preserves the ingegrity of the original waveform. At the same time, it has high spectral accuracy, LSD was around 6 dB, that means that the model sucessfully differentiates between the cassette noise and the music. And finally the audio is very clean, segmental SNR of 19+ dB means that the noise reduction is consistent, cassette noise is dropped to almost complete silence, while the music is untouched.
 
-More examples of spectrogram denoising on validation data are displayed in the initial gif on top of the
-repository.
-
-<img src="img/validation_spec_examples.png" alt="validation examples" title="Spectrogram validation examples" />
-
-Let's hear the results converted back to sounds:
-
-> Audios for Alarm example:
-
-[Input example alarm](https://vbelz.github.io/Speech-enhancement/demo_data/validation/noisy_voice_alarm39.wav)
-
-[Predicted output example alarm](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_pred_alarm39.wav)
-
-[True output example alarm](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_alarm39.wav)
-
-> Audios for Insects example:
-
-[Input example insects](https://vbelz.github.io/Speech-enhancement/demo_data/validation/noisy_voice_insect41.wav)
-
-[Predicted output example insects](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_pred_insect41.wav)
-
-[True output example insects](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_insect41.wav)
-
-> Audios for Vaccum cleaner example:
-
-[Input example vaccum cleaner](https://vbelz.github.io/Speech-enhancement/demo_data/validation/noisy_voice_vaccum35.wav)
-
-[Predicted output example vaccum cleaner](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_pred_vaccum35.wav)
-
-[True output example vaccum cleaner](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_vaccum35.wav)
-
-> Audios for Bells example:
-
-[Input example bells](https://vbelz.github.io/Speech-enhancement/demo_data/validation/noisy_voice_bells28.wav)
-
-[Predicted output example bells](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_pred_bells28.wav)
-
-[True output example bells](https://vbelz.github.io/Speech-enhancement/demo_data/validation/voice_bells28.wav)
-
-Below I show the corresponding displays converting back to time series:
-
-<img src="img/validation_timeserie_examples.png" alt="validation examples timeserie" title="Time serie validation examples" />
-
-You can have a look at these displays/audios in the jupyter notebook `demo_predictions.ipynb` that I provide in the `./demo_data` folder.
-
-Below, I show the corresponding gif of the spectrogram denoising gif (top of the repository) in the time serie domain.
-
-<img src="img/denoise_ts_10classes.gif" alt="Timeserie denoising" title="Speech enhancement"/>
-
-As an extreme testing, I applied to some voices blended with many noises at a high level.
-The network appeared to work surprisingly well for the denoising. The total time to denoise a 5 seconds audio was around 4 seconds (using classical CPU).
-
-Below some examples:
-
-> Example 1:
-
-[Input example test 1](https://vbelz.github.io/Speech-enhancement/demo_data/test/noisy_voice_long_t2.wav)
-
-[Predicted output example test 1](https://vbelz.github.io/Speech-enhancement/demo_data/save_predictions/denoise_t2.wav)
-
-> Example 2:
-
-[Input example test 2](https://vbelz.github.io/Speech-enhancement/demo_data/test/noisy_voice_long_t1.wav)
-
-[Predicted output example test 2](https://vbelz.github.io/Speech-enhancement/demo_data/save_predictions/denoise_t1.wav)
+Enjoy!
 
 ## How to use?
 
 ```
 - Clone this repository
 - pip install -r requirements.txt
-- python main.py OPTIONS
-
-* Modes of the program (Possible OPTIONS):
-
---mode: default='prediction', type=str, choices=['data_creation', 'training', 'prediction']
-
+- Use denoise_512.ipynb for denoising. By default the files are taken from "cassette_denoise/data/"
 ```
-
-Have a look at possible arguments for each option in `args.py`.
 
 ## References
 
@@ -192,9 +80,3 @@ Have a look at possible arguments for each option in `args.py`.
 > K. J. Piczak. **ESC: Dataset for Environmental Sound Classification**. *Proceedings of the 23rd Annual ACM Conference on Multimedia*, Brisbane, Australia, 2015.
 >
 > [DOI: http://dx.doi.org/10.1145/2733373.2806390]
-
-## License
-
-[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
-
-- **[MIT license](http://opensource.org/licenses/mit-license.php)**
