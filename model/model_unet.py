@@ -6,20 +6,14 @@ from tensorflow.keras import backend
 import tensorflow as tf
 print(tf.__version__)
 
+
 def high_freq_mae(y_true, y_pred):
-    # y_true is now the MASK (0 to 1)
-    # y_pred is the PREDICTED MASK (sigmoid output, 0 to 1)
-
-    # Frequencies are on axis 1 (rows) for (Batch, Freq, Time, Channels)
-    frequencies = tf.range(512, dtype=tf.float32)
-
-    # Linear weight increase from 1.0 to 5.0
-    weights = 1.0 + (frequencies / 512.0) * 4.0
-
-    # IMPORTANT: Ensure reshape matches (Batch, Freq, Time, Chan)
-    # If your data is (Batch, 512, 512, 1) where Dim 1 is Freq:
-    weights = tf.reshape(weights, (1, 512, 1, 1))
-
+    freq = tf.range(512,dtype=tf.float32)
+    
+    weights = 1.0 + (freq / 512.0) * 4.0 
+    
+    weights = tf.reshape(weights, (1, 512, 1 ,1))
+    
     mae = tf.abs(y_true - y_pred)
     weighted_mae = mae * weights
 
