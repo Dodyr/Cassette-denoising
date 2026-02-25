@@ -54,7 +54,7 @@ class Model():
         if len(audio_clean) > len(audio):
             audio_clean = audio_clean[: len(audio)]
         elif len(audio_clean) < len(audio):
-            audio = np.pad(audio_clean, (0, len(audio) - len(audio_clean)))
+            audio_clean = np.pad(audio_clean, (0, len(audio) - len(audio_clean)))
             
         return audio_clean
     
@@ -86,6 +86,3 @@ class Model():
         output_path = os.path.join(artifacts_path, output_file)
         soundfile.write(output_path, clean_audio, self.sample_rate)
         print(f"Denoised and saved as {output_file}")
-        
-            
-        
