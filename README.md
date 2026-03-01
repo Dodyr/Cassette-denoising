@@ -7,16 +7,15 @@ This project is based on [Speech-enhancement with Deep learning](https://github.
 
 Audios have many different ways to be represented, going from raw time series to time-frequency decompositions.
 The choice of the representation is crucial for the performance of your system.
-Among time-frequency decompositions, Spectrograms have been proved to be a useful representation for audio processing. They consist in 2D images representing sequences of Short Time Fourier Transform (STFT) with time and frequency as axes, and brightness representing the strength of a frequency component at each time frame. In such they appear a natural domain to apply the CNNS architectures for images directly to sound. Between magnitude and phase spectrograms, magnitude spectrograms contain most the structure of the signal. Phase spectrograms appear to show only little temporal and spectral regularities.
+Among time-frequency decompositions, Spectrograms have been proved to be a useful representation for audio processing. They consist in 2D images representing sequences of Short Time Fourier Transform (STFT) with time and frequency as axes, and brightness representing the strength of a frequency component at each time frame. In such they appear a natural domain to apply the CNNs architectures for images directly to sound. Between magnitude and phase spectrograms, magnitude spectrograms contain most the structure of the signal. Phase spectrograms appear to show only little temporal and spectral regularities.
 
-In this project, I will use magnitude spectrograms as a representation of sound (cf image below) in order to predict the noise model to be subtracted to a noisy voice spectrogram.
+In this project, I will use magnitude spectrograms as a representation of sound in order to predict the noise model to be subtracted to a noisy voice spectrogram.
 
-<img src="img/sound_to_spectrogram.png" alt="sound representation" title="sound representation" />
 
 ## Prepare the data
 
-To create the datasets for training, I gathered digitized a few audiocassettes I own and digitized pure cassette noise from an empty cassette. I applied noise reduction to the audio in [Audacity](https://www.audacityteam.org/) to make them sound clean enough and then added the recorded cassette noise on top. I did so for two reasons: 
-    - if I would pair raw cassette recordings with Audacity-denoised versions there would be a difference in dB, which I didn't want.
+To create the datasets for training, I gathered digitized a few audiocassettes I own. I applied noise reduction to the audio in [Audacity](https://www.audacityteam.org/) to make them sound clean enough. I did so for two reasons: 
+    - it is a clean enough representation of the original audio
     - it proved impossible to pair them with digitazation of the same cassettes with Dolby B noise reduction turned on, due to wow and flutter it wasn't possible pair the audio 1 to 1, there was a small difference in speed playback in each moment of time, unnoticeable during regular listening, but this would be useless for the training.
 
 To create the datasets for training/testing, audios were sampled at 44.1kHz. I added together two music albums with small pauses in betweem resulting in around 2 hours of continious audio. To train the model 'notebook.ipynb' was used.
@@ -48,10 +47,10 @@ this is for the audio not to clip and distort. At the end the cleaned magnitude 
 ## Performance
 Model has performed quite good! See (and hear) for yourself!
 
-<img src="img/spectrogram_comparison.png" alt="spectrogram comparison" title="spectrogram comparison" />
+<img src="img/spec_1.png" alt="spectrogram comparison" title="spectrogram comparison" />
 
 I have several audio files saved in `cassette_denoise/data/`.
-In general, model has proven to be strong in mono and stereo denoising, it has high fidelity recovery. In the tests SI-SDR was around 19 dB. This means that the audio preserves the ingegrity of the original waveform. At the same time, it has high spectral accuracy, LSD was around 6 dB, that means that the model sucessfully differentiates between the cassette noise and the music. And finally the audio is very clean, segmental SNR of 19+ dB means that the noise reduction is consistent, cassette noise is dropped to almost complete silence, while the music is untouched.
+In general, model has proven to be strong in mono and stereo denoising, it has high fidelity recovery. In the tests LSD was halved, PEAQ score shows improvements.
 
 Enjoy!
 
@@ -69,17 +68,9 @@ Enjoy!
 >
 >[https://ejhumphrey.com/assets/pdf/jansson2017singing.pdf]
 
->Grais, Emad M. and Plumbley, Mark D., **Single Channel Audio Source Separation using Convolutional Denoising Autoencoders** (2017).
->
->[https://arxiv.org/abs/1703.08019]
-
 >Ronneberger O., Fischer P., Brox T. (2015) **U-Net: Convolutional Networks for Biomedical Image Segmentation**. In: Navab N., Hornegger J., Wells W., Frangi A. (eds) *Medical Image Computing and Computer-Assisted Intervention – MICCAI 2015*. MICCAI 2015. Lecture Notes in Computer Science, vol 9351. Springer, Cham
 >
 >[https://arxiv.org/abs/1505.04597]
-
-> K. J. Piczak. **ESC: Dataset for Environmental Sound Classification**. *Proceedings of the 23rd Annual ACM Conference on Multimedia*, Brisbane, Australia, 2015.
->
-> [DOI: http://dx.doi.org/10.1145/2733373.2806390]
 
 ## License
 
