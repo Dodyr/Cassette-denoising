@@ -60,6 +60,7 @@ Enjoy!
 - Clone this repository
 - pip install -r requirements.txt
 - Use denoise_512.ipynb for denoising. By default the files are taken from "cassette_denoise/data/"
+- to evaluate using PEAQ, you would need to install gstPEAQ from https://github.com/HSU-ANT/gstpeaq?tab=readme-ov-file and GStreamer itself from https://gstreamer.freedesktop.org/
 ```
 
 ## References
